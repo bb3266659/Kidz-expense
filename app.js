@@ -434,18 +434,55 @@ function filteredRecords() {
 
 function renderChart(targetId, entries) {
   const container = $(targetId);
+  if (!container) return;
+
+  const isCategoryChart = targetId === "categoryChart";
+
+  // จำกิจกรรมที่เปิดไว้ก่อนวาดกราฟใหม่
+  const previouslyOpen = new Set(
+    Array.from(
+      container.querySelectorAll("details.activity-details[open]")
+    ).map(node => node.dataset.activity)
+  );
+
   container.replaceChildren();
 
   if (!entries.length) {
-    container.append(element("p", "empty", "ยังไม่มีข้อมูล"));
+    container.append(
+      element("p", "empty", "ยังไม่มีข้อมูล")
+    );
     return;
   }
 
-  const maxValue = Math.max(1, ...entries.map(entry => entry[1]));
+  const maxValue = entries.reduce(
+    (max, entry) => Math.max(max, entry[1]),
+    1
+  );
+
+  // ใช้ตัวกรองเดียวกับยอดบนกราฟ
+  // ชื่อกิจกรรมตรงกับชื่อที่ render() ใช้สร้างกราฟเดิม
+  const recordsByActivity = new Map();
+
+  if (isCategoryChart) {
+    for (const record of filteredRecords()) {
+      const category = CATEGORY_MAP.get(record.category);
+      if (!category) continue;
+
+      const activityName = category.name;
+
+      if (!recordsByActivity.has(activityName)) {
+        recordsByActivity.set(activityName, []);
+      }
+
+      recordsByActivity.get(activityName).push(record);
+    }
+  }
+
+  const fragment = document.createDocumentFragment();
 
   for (const [label, value] of entries) {
-    const row = element("div");
     const heading = element("div", "bar-label");
+
     heading.append(
       element("span", "", label),
       element("strong", "", money(value))
@@ -453,13 +490,175 @@ function renderChart(targetId, entries) {
 
     const track = element("div", "bar-track");
     const fill = element("div", "bar-fill");
-    fill.style.width = `${(value / maxValue) * 100}%`;
+
+    fill.style.width =
+      `${Math.max(0, Math.min(100, (value / maxValue) * 100))}%`;
+
     track.setAttribute("aria-hidden", "true");
     track.append(fill);
 
-    row.append(heading, track);
-    container.append(row);
+    // กราฟรายเดือนยังแสดงแบบเดิม
+    if (!isCategoryChart) {
+      const row = element("div");
+      row.append(heading, track);
+      fragment.append(row);
+      continue;
+    }
+
+    const items = recordsByActivity.get(label) || [];
+
+    const row = element("details", "activity-details");
+    row.dataset.activity = label;
+
+    const summary = element("summary", "activity-summary");
+    const hint = element("span", "activity-hint");
+
+    summary.append(heading, track, hint);
+
+    const panel = element("div", "activity-panel");
+
+    const overview = element("div", "activity-overview");
+
+    overview.append(
+      element(
+        "strong",
+        "activity-total",
+        `รวม ${money(value)}`
+      ),
+      element(
+        "span",
+        "activity-count",
+        `${items.length.toLocaleString("th-TH")} รายการ`
+      )
+    );
+
+    panel.append(
+      overview,
+      element(
+        "p",
+        "activity-filter-note",
+        "รายละเอียดตามตัวกรองเดียวกับกราฟ • เรียงวันที่ล่าสุดก่อน"
+      )
+    );
+
+    const list = element("div", "activity-records");
+    const progress = element("p", "activity-progress");
+
+    const moreButton = element(
+      "button",
+      "secondary small activity-more",
+      "แสดงเพิ่มเติม"
+    );
+
+    moreButton.type = "button";
+    moreButton.hidden = true;
+
+    panel.append(list, progress, moreButton);
+    row.append(summary, panel);
+
+    let shown = 0;
+    let initialized = false;
+
+    function updateHint() {
+      hint.textContent = row.open
+        ? "ซ่อนรายละเอียด"
+        : `ดูรายละเอียด ${items.length.toLocaleString("th-TH")} รายการ`;
+    }
+
+    function appendNextBatch() {
+      const batch = items.slice(shown, shown + PAGE_SIZE);
+      const batchFragment = document.createDocumentFragment();
+
+      for (const record of batch) {
+        const card = element("article", "activity-record");
+        const top = element("div", "activity-record-top");
+
+        const date = element(
+          "time",
+          "activity-record-date",
+          displayDate(record.date)
+        );
+
+        date.dateTime = record.date;
+
+        const amount = element(
+          "strong",
+          "activity-record-amount",
+          money(record.amountCents)
+        );
+
+        top.append(date, amount);
+
+        const note = String(record.note ?? "").trim();
+
+        card.append(
+          top,
+          element(
+            "p",
+            "activity-record-note",
+            note || "ไม่ได้ระบุรายละเอียด"
+          )
+        );
+
+        batchFragment.append(card);
+      }
+
+      list.append(batchFragment);
+      shown += batch.length;
+
+      progress.textContent =
+        `แสดง ${shown.toLocaleString("th-TH")} จาก ` +
+        `${items.length.toLocaleString("th-TH")} รายการ`;
+
+      const remaining = items.length - shown;
+
+      moreButton.hidden = remaining <= 0;
+
+      if (remaining > 0) {
+        moreButton.textContent =
+          `แสดงเพิ่มเติม ${Math.min(PAGE_SIZE, remaining)} รายการ` +
+          ` (เหลือ ${remaining.toLocaleString("th-TH")})`;
+      }
+    }
+
+    function initializeDetails() {
+      if (initialized) return;
+      initialized = true;
+
+      if (!items.length) {
+        list.append(
+          element("p", "empty", "ไม่พบรายละเอียดรายการ")
+        );
+        progress.hidden = true;
+        return;
+      }
+
+      appendNextBatch();
+    }
+
+    row.addEventListener("toggle", () => {
+      updateHint();
+
+      if (row.open) {
+        initializeDetails();
+      }
+    });
+
+    moreButton.addEventListener("click", () => {
+      appendNextBatch();
+    });
+
+    // เปิดกิจกรรมเดิมไว้ ถ้ายังอยู่ในผลลัพธ์หลังกรอง
+    if (previouslyOpen.has(label)) {
+      row.open = true;
+      initializeDetails();
+    }
+
+    updateHint();
+    fragment.append(row);
   }
+
+  container.append(fragment);
 }
 
 function render() {

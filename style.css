@@ -480,3 +480,183 @@ footer {
     margin-top: 10px;
   }
 }
+/* ==========================================
+   รายละเอียดค่าใช้จ่ายแยกตามกิจกรรม
+   ========================================== */
+
+#categoryChart {
+  max-height: none;
+  overflow: visible;
+}
+
+.activity-details {
+  min-width: 0;
+}
+
+.activity-summary {
+  display: block;
+  padding: 8px 0;
+  border-radius: 10px;
+  cursor: pointer;
+  list-style: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.activity-summary::-webkit-details-marker {
+  display: none;
+}
+
+.activity-summary::marker {
+  content: "";
+}
+
+.activity-summary:focus-visible {
+  outline: 3px solid #a5b4fc;
+  outline-offset: 4px;
+}
+
+.activity-summary .bar-label {
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.activity-summary .bar-label > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.activity-summary .bar-label > strong {
+  margin-left: auto;
+}
+
+.activity-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  color: var(--primary);
+  font-size: .8rem;
+  font-weight: 600;
+}
+
+.activity-hint::after {
+  content: "▾";
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+
+.activity-details[open] .activity-hint::after {
+  content: "▴";
+}
+
+.activity-panel {
+  min-width: 0;
+  margin: 8px 0 12px;
+  padding: 14px;
+  border: 1px solid #dfe5ff;
+  border-radius: 14px;
+  background: #f8faff;
+}
+
+.activity-overview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+
+.activity-total {
+  color: var(--primary-dark);
+  font-size: .95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.activity-count {
+  color: var(--muted);
+  font-size: .8rem;
+}
+
+.activity-filter-note {
+  margin: 6px 0 14px;
+  color: var(--muted);
+  font-size: .78rem;
+}
+
+.activity-records {
+  display: grid;
+  gap: 10px;
+}
+
+.activity-record {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.activity-record-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+
+.activity-record-date {
+  color: var(--muted);
+  font-size: .82rem;
+}
+
+.activity-record-amount {
+  margin-left: auto;
+  color: var(--primary);
+  font-size: .95rem;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.activity-record-note {
+  margin: 9px 0 0;
+  color: var(--text);
+  font-size: .9rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.activity-progress {
+  margin: 12px 0 0;
+  color: var(--muted);
+  text-align: center;
+  font-size: .78rem;
+}
+
+.activity-more {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+}
+
+@media (hover: hover) {
+  .activity-summary:hover .activity-hint {
+    color: var(--primary-dark);
+    text-decoration: underline;
+  }
+}
+
+@media (max-width: 600px) {
+  .activity-panel {
+    padding: 10px;
+  }
+
+  .activity-record {
+    padding: 11px;
+  }
+
+  .activity-record-note {
+    font-size: .87rem;
+  }
+}

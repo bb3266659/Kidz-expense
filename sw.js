@@ -1,7 +1,7 @@
 "use strict";
 
-// เปลี่ยนเวอร์ชันทุกครั้งที่แก้ไฟล์แอป
-const VERSION = "v1";
+// เปลี่ยนค่านี้ทุกครั้งที่อัปเดตไฟล์แอป
+const VERSION = "v3-activity-details";
 
 const CACHE_PREFIX =
   "kids-expense:" + encodeURIComponent(self.registration.scope) + ":";
@@ -27,7 +27,7 @@ self.addEventListener("install", event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
 
-    // ถ้าไฟล์ใดไฟล์หนึ่งหาย การติดตั้งจะไม่สำเร็จ
+    // ทุกไฟล์ต้องโหลดสำเร็จ จึงจะติดตั้งเวอร์ชันใหม่
     await cache.addAll(
       APP_FILES.map(url => new Request(url, { cache: "reload" }))
     );
@@ -60,20 +60,24 @@ self.addEventListener("fetch", event => {
   const url = new URL(request.url);
   const scope = new URL(self.registration.scope);
 
-  if (url.origin !== scope.origin ||
-      !url.pathname.startsWith(scope.pathname)) {
+  if (
+    url.origin !== scope.origin ||
+    !url.pathname.startsWith(scope.pathname)
+  ) {
     return;
   }
 
-  // แอปหน้าเดียว: เปิด app shell จากแคชเมื่อมี navigation
+  // เปิดหน้าแอปจากแคช เพื่อให้ใช้งานออฟไลน์ได้
   if (request.mode === "navigate") {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
       const cached = await cache.match(INDEX_URL);
 
       if (cached) return cached;
+
       return fetch(request);
     })());
+
     return;
   }
 
@@ -87,6 +91,7 @@ self.addEventListener("fetch", event => {
     const cached = await cache.match(url.href);
 
     if (cached) return cached;
+
     return fetch(request);
   })());
 });
